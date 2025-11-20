@@ -1,0 +1,23 @@
+{
+  "name": "tp2_a79309_a56278_daw",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NMontalvao12/TP2_A79309_A56278_DAW.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NMontalvao12/TP2_A79309_A56278_DAW/issues"
+  },
+  "homepage": "https://github.com/NMontalvao12/TP2_A79309_A56278_DAW#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
