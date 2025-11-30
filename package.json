@@ -1,10 +1,12 @@
 {
   "name": "tp2_a79309_a56278_daw",
   "version": "1.0.0",
-  "description": "",
+  "description": "**Projeto:** Sistema de Monitorização e Histórico de Qualidade do Ar (AQI)  \r **Data:** 30/11/2025",
   "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
   "scripts": {
-    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,9 +22,13 @@
   "homepage": "https://github.com/NMontalvao12/TP2_A79309_A56278_DAW#readme",
   "dependencies": {
     "axios": "^1.13.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7"
+    "node-cron": "^4.2.1",
+    "sqlite3": "^5.1.7",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
+    "yamljs": "^0.3.0"
   }
 }
