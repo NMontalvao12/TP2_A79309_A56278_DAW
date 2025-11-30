@@ -5,32 +5,35 @@ const db = require('./src/config/database');
 const initScheduler = require('./src/services/scheduler');
 const apiRoutes = require('./src/routes/apiRoutes');
 
+// Importações do Swagger
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');                  
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Carregar o ficheiro YAML
+const swaggerDocument = YAML.load('./docs/swagger.yaml');
 
 // Middlewares
 app.use(cors());
 app.use(express.json()); // Permite ler JSON no Body dos pedidos
 
+// Rota da Documentação
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // Registar Rotas
 app.use('/api', apiRoutes);
 
-// Rota base
 app.get('/', (req, res) => {
     res.json({ 
         message: "API de Monitorização de Ar v1.0",
-        endpoints: {
-            list_cities: "GET /api/cities",
-            add_city: "POST /api/cities",
-            history: "GET /api/cities/:id/readings"
-        }
+        docs: "Aceda a documentação em /api-docs"
     });
 });
 
-// Inicialização
 app.listen(PORT, () => {
     console.log(`🚀 Servidor a correr na porta ${PORT}`);
-    
-    // Inicia o Cron Job (Sincronização Agendada)
+    console.log(`📄 Documentação disponível em http://localhost:${PORT}/api-docs`);
     initScheduler();
 });

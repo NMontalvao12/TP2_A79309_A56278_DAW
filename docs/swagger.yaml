@@ -1,0 +1,125 @@
+openapi: 3.0.0
+info:
+  title: API de Monitorização de Qualidade do Ar
+  description: API desenvolvida no âmbito da UC Dev. de Aplicações Web, da LESTI, para sincronizar dados da JuheAPI, processá-los e expô-los localmente.
+  version: 1.0.0
+  contact:
+    name: José Victor Santos
+servers:
+  - url: http://localhost:3000
+    description: Servidor Local
+
+# Definição de Segurança Global
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    City:
+      type: object
+      properties:
+        id:
+          type: integer
+        search_query:
+          type: string
+        display_name:
+          type: string
+    Reading:
+      type: object
+      properties:
+        city_id:
+          type: integer
+        aqi:
+          type: integer
+        aqi_category:
+          type: string
+        user_notes:
+          type: string
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/cities:
+    get:
+      summary: Listar cidades monitorizadas
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista de cidades retornada com sucesso.
+    post:
+      summary: Adicionar nova cidade
+      tags: [Cidades]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - search_query
+              properties:
+                search_query:
+                  type: string
+                  example: "paris"
+                display_name:
+                  type: string
+                  example: "Paris (França)"
+      responses:
+        201:
+          description: Cidade criada e sincronização iniciada.
+
+  /api/cities/{id}/readings:
+    get:
+      summary: Obter histórico de uma cidade
+      tags: [Leituras]
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID da cidade
+      responses:
+        200:
+          description: Histórico retornado com sucesso.
+
+  /api/readings/{id}:
+    patch:
+      summary: Adicionar nota a uma leitura (Update)
+      tags: [Leituras]
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_notes
+              properties:
+                user_notes:
+                  type: string
+                  example: "Pico de poluição detetado devido ao trânsito."
+      responses:
+        200:
+          description: Nota adicionada.
+    delete:
+      summary: Apagar uma leitura
+      tags: [Leituras]
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        200:
+          description: Leitura removida.
