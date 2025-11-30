@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const apiKeyAuth = require('../middlewares/authMiddleware'); // Importar o middleware
+const apiKeyAuth = require('../middlewares/authMiddleware');
 const CityController = require('../controllers/cityController');
 const ReadingController = require('../controllers/readingController');
+const AdminController = require('../controllers/adminController');
+
+// --- Rota de Administração (Geração de Chaves) ---
+// Esta rota valida a ADMIN_API_KEY internamente
+router.post('/admin/generate-key', AdminController.generateKey);
 
 // --- Rotas Protegidas (Requerem API Key) ---
 // Aplicamos o middleware a todas as rotas abaixo desta linha
 router.use(apiKeyAuth);
 
-// --- Rotas Públicas (Ex: ver status) ---
+// Status da api
 router.get('/status', (req, res) => res.json({ status: 'online' }));
 
 // Cidades

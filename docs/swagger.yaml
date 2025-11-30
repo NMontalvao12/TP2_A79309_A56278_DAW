@@ -123,3 +123,26 @@ paths:
       responses:
         200:
           description: Leitura removida.
+  /api/admin/generate-key:
+    post:
+      summary: Gerar nova API Key (Apenas Admin)
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - client_name
+              properties:
+                client_name:
+                  type: string
+                  example: "Novo Cliente"
+      responses:
+        201:
+          description: Chave gerada com sucesso.
+        403:
+          description: Apenas a chave Admin do .env é aceite.

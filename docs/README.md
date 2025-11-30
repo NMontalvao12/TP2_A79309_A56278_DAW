@@ -1,5 +1,67 @@
-# Documento de Desenho e Arquitetura
-**Projeto:** Sistema de Monitorização e Histórico de Qualidade do Ar (AQI)  
+# Sistema de Monitorização e Histórico de Qualidade do Ar (AQI)
+
+Este projeto foi desenvolvido no âmbito da disciplina de Desenvolvimento de Aplicações Web. Consiste numa API RESTful que consome dados públicos de qualidade do ar, processa-os e armazena-os localmente, expondo-os através de endpoints documentados.
+
+---
+
+## Instruções de Instalação e Execução
+
+Siga estes passos para colocar o sistema em funcionamento na sua máquina local.
+
+### 1. Pré-requisitos
+* **Node.js** (v14 ou superior)
+* **NPM** (Gestor de pacotes do Node)
+* **Git** (Opcional, caso clone o repositório)
+
+### 2. Instalação
+Abra o terminal na pasta raiz do projeto e execute:
+
+```bash
+npm install
+```
+
+### 3. Configuração (.env)
+Crie um ficheiro `.env` na raiz do projeto e configure as seguintes variáveis:
+
+```ini
+PORT=3000
+# Chave para consumir a API externa (JuheAPI)
+JUHE_API_KEY=a_tua_chave_juhe_aqui
+# Chave Mestra para autenticação na TUA API Local (para testes)
+ADMIN_API_KEY=chave_mestra_para_testes
+```
+
+> **Nota:** Se não tiver uma chave JuheAPI, o sistema irá iniciar, mas a sincronização de dados falhará.
+
+### 4. Executar a Aplicação
+Para iniciar o servidor:
+
+```bash
+node server.js
+```
+
+Deverá ver a seguinte mensagem no terminal:
+`🚀 Servidor a correr na porta 3000`
+
+### 5. Documentação e Testes (Swagger)
+Com o servidor a correr, aceda à documentação interativa para testar os endpoints:
+
+👉 **[http://localhost:3000/api-docs](http://localhost:3000/api-docs)**
+
+*Para testar endpoints protegidos no Swagger, clique em "Authorize" e use a chave: `chave_mestra_para_testes`.*
+
+### 6. Gestão de Chaves (Primeiros Passos)
+O sistema arranca sem clientes registados (exceto se configurado manualmente). Para usar a API, deve primeiro gerar uma API Key de Cliente usando a sua Chave de Admin:
+
+1. Faça um POST para /api/admin/generate-key.
+2. Header x-api-key: use o valor de ADMIN_API_KEY do seu .env.
+3. Body: { "client_name": "O Meu Cliente" }.
+4. Use a chave retornada (api_key) para fazer pedidos aos outros endpoints.
+
+---
+
+# Documento de Desenho e Arquitetura (Fase 2)
+
 **Data:** 30/11/2025
 
 ## 1. Visão Geral da Arquitetura
@@ -76,7 +138,7 @@ CREATE TABLE aqi_readings (
     -- Poluentes (Dados Brutos da API)
     co DECIMAL(10, 2),
     no2 DECIMAL(10, 2),
-    oo DECIMAL(10, 2),
+    o3 DECIMAL(10, 2),
     pm10 DECIMAL(10, 2),
     pm25 DECIMAL(10, 2),
     so2 DECIMAL(10, 2),
@@ -105,75 +167,61 @@ CREATE TABLE api_keys (
 );
 ```
 
-![alt text](docs/diagrams/out/db_erd/db_erd.png)
+![Diagrama ERD](docs/diagrams/out/db_erd/db_erd.png)
 
 ---
 
-## 4. Modelo de Segurança
+## 4. Modelo de Segurança  
+O sistema implementa segurança hierárquica:
 
-O sistema implementa segurança em duas camadas:
+**Nível Admin (Backoffice):**
+- Controlado pela variável de ambiente `ADMIN_API_KEY`.
+- Permite acesso exclusivo à rota `/api/admin/*` para gerar chaves.
 
-### Segurança de Origem (Backend -> JuheAPI)
-- A chave da API externa é armazenada em variáveis de ambiente (`.env`) e nunca exposta ao cliente final.
+**Nível Cliente (Consumidor):**
+- Controlado por chaves geradas (UUIDs), cujos hashes (SHA-256) são armazenados na tabela `api_keys`.
+- Permite acesso aos recursos de dados (Cidades, Leituras).
 
-### Segurança de Exposição (Cliente -> Backend Local)
-- **Autenticação:** Via API Key no header (`x-api-key`).  
-- **Autorização:** Apenas clientes com chaves ativas podem executar `POST`, `PATCH` ou `DELETE`.  
-- **Validação:** Sanitização de inputs para prevenir SQL Injection.
+**Segurança de Origem:**
+- A chave da JuheAPI nunca é exposta.
 
 ---
 
 ## 5. Interface da API REST (Especificação)
 
-### 5.1. Endpoints de Configuração
+### 5.1. Administração
 
-#### `POST /cities`
-Regista uma nova cidade para monitorização.  
-Body:
+**POST /admin/generate-key**  
+Gera uma nova chave para um cliente. Requer `ADMIN_API_KEY`.
+
 ```json
-{ "search_query": "beijing", "display_name": "Pequim" }
+{ "client_name": "Nome do Cliente" }
 ```
+---
 
-#### `GET /cities`
-Lista cidades monitorizadas.
+### 5.2. Configuração (Cidades)
+
+**POST /cities**  
+Regista uma nova cidade e força sincronização imediata.  
+Body: `{ "search_query": "london", "display_name": "Londres" }`
+
+**GET /cities**  
+Lista todas as cidades configuradas.
 
 ---
 
-### 5.2. Endpoints de Dados (CRUD Operacional)
+### 5.3. Dados (Leituras)
 
-#### READ: `GET /cities/:city_id/readings`
-Query Params:
-```
-?limit=50&start_date=2025-01-01
-```
+**GET /cities/:city_id/readings**  
+Obtém histórico.  
+Query Params (opcionais):
+- `start_date` (ex: 2025-01-01)
+- `end_date` (ex: 2025-01-31)
+- `limit` (padrão: 50)
 
-Exemplo de resposta:
-```json
-{
-    "id": 105,
-    "city": "beijing",
-    "aqi": 165,
-    "classification": "Insalubre",
-    "pollutants": {
-        "co": 10, "no2": 32.5, "o3": 0.9,
-        "pm10": 111, "pm25": 165, "so2": 2.1
-    },
-    "location": { "lat": 39.95, "lon": 116.46 },
-    "notes": null,
-    "timestamp": "2025-11-30T10:00:00Z"
-}
-```
+**PATCH /readings/:reading_id**  
+Adiciona notas a uma leitura.  
+Body: `{ "user_notes": "Anomalia detectada." }`
 
-#### CREATE: `POST /readings`
-Uso: adicionar dados de um sensor local.  
-Body: estrutura semelhante à tabela `aqi_readings`.
-
-#### UPDATE: `PATCH /readings/:reading_id`
-Uso: adicionar notas explicativas.  
-Body:
-```json
-{ "user_notes": "Feriado nacional, tráfego reduzido." }
-```
-
-#### DELETE: `DELETE /readings/:reading_id`
-Uso: remover leitura incorreta.
+**DELETE /readings/:reading_id**  
+Remove uma leitura específica.
