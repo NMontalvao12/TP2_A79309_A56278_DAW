@@ -1,0 +1,67 @@
+@startuml
+
+!theme plain
+hide circle
+skinparam linetype ortho
+
+' Definição das Entidades
+
+entity "monitored_cities" as cities {
+  *id : INTEGER <<PK>>
+  --
+  *search_query : VARCHAR(100) <<UNIQUE>>
+  display_name : VARCHAR(100)
+  is_active : BOOLEAN
+  created_at : DATETIME
+}
+
+entity "aqi_readings" as readings {
+  *id : INTEGER <<PK>>
+  --
+  *city_id : INTEGER <<FK>>
+  aqi : INTEGER
+  aqi_category : VARCHAR(50)
+  -- Poluentes --
+  co : DECIMAL(10, 2)
+  no2 : DECIMAL(10, 2)
+  o3 : DECIMAL(10, 2)
+  pm10 : DECIMAL(10, 2)
+  pm25 : DECIMAL(10, 2)
+  so2 : DECIMAL(10, 2)
+  -- Geolocalização --
+  latitude : DECIMAL(10, 6)
+  longitude : DECIMAL(10, 6)
+  -- Metadados --
+  measured_at : DATETIME
+  user_notes : TEXT
+}
+
+entity "api_keys" as keys {
+  *id : INTEGER <<PK>>
+  --
+  client_name : VARCHAR(100)
+  *key_hash : VARCHAR(64) <<UNIQUE>>
+  is_active : BOOLEAN
+}
+
+' Definição das Relações
+
+cities ||..o{ readings : "monitoriza (1:N)"
+
+note right of cities
+  Configuração: Cidades que o
+  Cron Job vai buscar à API externa.
+end note
+
+note right of readings
+  Dados Históricos: Armazena a resposta
+  da API + processamento local.
+end note
+
+note bottom of keys
+  Segurança: Chaves para clientes
+  consumirem a TUA API REST.
+  (Sem relação direta com dados)
+end note
+
+@enduml
