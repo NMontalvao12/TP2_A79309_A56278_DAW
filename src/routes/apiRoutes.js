@@ -9,6 +9,7 @@ const AdminController = require('../controllers/adminController');
 // Esta rota valida a ADMIN_API_KEY internamente
 router.post('/admin/generate-key', AdminController.generateKey);
 
+
 // --- Rotas Protegidas (Requerem API Key) ---
 // Aplicamos o middleware a todas as rotas abaixo desta linha
 router.use(apiKeyAuth);
@@ -19,6 +20,7 @@ router.get('/status', (req, res) => res.json({ status: 'online' }));
 // Cidades
 router.get('/cities', CityController.listCities);
 router.post('/cities', CityController.addCity);
+router.patch('/cities/:id/active', CityController.updateActive);
 
 // Leituras
 router.get('/cities/:id/readings', ReadingController.getHistory);

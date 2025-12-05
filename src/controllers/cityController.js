@@ -53,6 +53,41 @@ const CityController = {
                 }
             });
         });
+    },
+
+    updateActive: (req, res) => {
+        const cityId = req.params.id;
+        const { is_active } = req.body;
+
+        if (is_active === undefined) {
+            return res.status(400).json({ error: "O campo 'is_active' é obrigatório." });
+        }
+
+        let value;
+        if (typeof is_active === 'boolean') {
+            value = is_active ? 1 : 0;
+        } else if (typeof is_active === 'number') {
+            value = is_active ? 1 : 0;
+        } else if (typeof is_active === 'string') {
+            const s = is_active.toLowerCase();
+            if (s === '1' || s === 'true') value = 1;
+            else if (s === '0' || s === 'false') value = 0;
+            else return res.status(400).json({ error: "Valor inválido para 'is_active'." });
+        } else {
+            return res.status(400).json({ error: "Valor inválido para 'is_active'." });
+        }
+
+        const sql = 'UPDATE monitored_cities SET is_active = ? WHERE id = ?';
+        db.run(sql, [value, cityId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Cidade não encontrada.' });
+
+            res.json({
+                status: 'success',
+                message: 'Estado atualizado.',
+                data: { id: cityId, is_active: value }
+            });
+        });
     }
 };
 

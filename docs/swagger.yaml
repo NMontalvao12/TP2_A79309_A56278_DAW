@@ -71,6 +71,37 @@ paths:
         201:
           description: Cidade criada e sincronização iniciada.
 
+  /api/cities/{id}/active:
+    patch:
+      summary: Ativar/Desativar cidade monitorizada
+      tags: [Cidades]
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID da cidade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Estado atualizado com sucesso.
+        400:
+          description: Pedido inválido.
+        404:
+          description: Cidade não encontrada.
+
   /api/cities/{id}/readings:
     get:
       summary: Obter histórico de uma cidade
