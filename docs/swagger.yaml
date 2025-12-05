@@ -177,3 +177,23 @@ paths:
           description: Chave gerada com sucesso.
         403:
           description: Apenas a chave Admin do .env é aceite.
+  /api/admin/api-keys/{id}:
+    delete:
+      summary: Remover API Key por ID (Apenas Admin)
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID da API Key
+      responses:
+        200:
+          description: API Key removida com sucesso.
+        404:
+          description: API Key não encontrada.
+        403:
+          description: Apenas a chave Admin do .env é aceite.

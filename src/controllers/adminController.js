@@ -37,6 +37,25 @@ const AdminController = {
                 }
             });
         });
+    },
+    deleteKey: (req, res) => {
+        const incomingKey = req.headers['x-api-key'];
+        if (incomingKey !== process.env.ADMIN_API_KEY) {
+            return res.status(403).json({ status: 'error', message: 'Proibido.' });
+        }
+
+        const keyId = req.params.id;
+        const sql = `DELETE FROM api_keys WHERE id = ?`;
+
+        db.run(sql, [keyId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'API Key não encontrada.' });
+
+            res.json({
+                status: 'success',
+                message: 'API Key removida com sucesso.'
+            });
+        });
     }
 };
 

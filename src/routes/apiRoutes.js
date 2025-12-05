@@ -8,7 +8,7 @@ const AdminController = require('../controllers/adminController');
 // --- Rota de Administração (Geração de Chaves) ---
 // Esta rota valida a ADMIN_API_KEY internamente
 router.post('/admin/generate-key', AdminController.generateKey);
-
+router.delete('/admin/api-keys/:id', AdminController.deleteKey);
 
 // --- Rotas Protegidas (Requerem API Key) ---
 // Aplicamos o middleware a todas as rotas abaixo desta linha
