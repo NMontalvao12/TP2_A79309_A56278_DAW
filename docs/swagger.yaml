@@ -71,6 +71,37 @@ paths:
         201:
           description: Cidade criada e sincronização iniciada.
 
+  /api/cities/{id}/active:
+    patch:
+      summary: Ativar/Desativar cidade monitorizada
+      tags: [Cidades]
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID da cidade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Estado atualizado com sucesso.
+        400:
+          description: Pedido inválido.
+        404:
+          description: Cidade não encontrada.
+
   /api/cities/{id}/readings:
     get:
       summary: Obter histórico de uma cidade
@@ -85,6 +116,22 @@ paths:
       responses:
         200:
           description: Histórico retornado com sucesso.
+
+  /api/cities/top/best:
+    get:
+      summary: Top 3 cidades com melhor AQI (mais baixo)
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista retornada com sucesso.
+
+  /api/cities/top/worst:
+    get:
+      summary: Top 3 cidades com pior AQI (mais alto)
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista retornada com sucesso.
 
   /api/readings/{id}:
     patch:
@@ -144,5 +191,25 @@ paths:
       responses:
         201:
           description: Chave gerada com sucesso.
+        403:
+          description: Apenas a chave Admin do .env é aceite.
+  /api/admin/api-keys/{id}:
+    delete:
+      summary: Remover API Key por ID (Apenas Admin)
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID da API Key
+      responses:
+        200:
+          description: API Key removida com sucesso.
+        404:
+          description: API Key não encontrada.
         403:
           description: Apenas a chave Admin do .env é aceite.
