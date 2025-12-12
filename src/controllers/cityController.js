@@ -88,6 +88,48 @@ const CityController = {
                 data: { id: cityId, is_active: value }
             });
         });
+    },
+    getTopBest: (req, res) => {
+        const sql = `
+            SELECT mc.id AS city_id, mc.display_name, mc.search_query, ar.aqi, ar.measured_at
+            FROM monitored_cities mc
+            JOIN (
+                SELECT r.city_id, r.aqi, r.measured_at
+                FROM aqi_readings r
+                JOIN (
+                    SELECT city_id, MAX(measured_at) AS max_measured_at
+                    FROM aqi_readings
+                    GROUP BY city_id
+                ) latest ON latest.city_id = r.city_id AND latest.max_measured_at = r.measured_at
+            ) ar ON ar.city_id = mc.id
+            ORDER BY ar.aqi ASC
+            LIMIT 3
+        `;
+        db.all(sql, [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ status: 'success', data: rows });
+        });
+    },
+    getTopWorst: (req, res) => {
+        const sql = `
+            SELECT mc.id AS city_id, mc.display_name, mc.search_query, ar.aqi, ar.measured_at
+            FROM monitored_cities mc
+            JOIN (
+                SELECT r.city_id, r.aqi, r.measured_at
+                FROM aqi_readings r
+                JOIN (
+                    SELECT city_id, MAX(measured_at) AS max_measured_at
+                    FROM aqi_readings
+                    GROUP BY city_id
+                ) latest ON latest.city_id = r.city_id AND latest.max_measured_at = r.measured_at
+            ) ar ON ar.city_id = mc.id
+            ORDER BY ar.aqi DESC
+            LIMIT 3
+        `;
+        db.all(sql, [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ status: 'success', data: rows });
+        });
     }
 };
 

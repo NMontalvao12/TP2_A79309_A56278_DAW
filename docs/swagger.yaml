@@ -117,6 +117,22 @@ paths:
         200:
           description: Histórico retornado com sucesso.
 
+  /api/cities/top/best:
+    get:
+      summary: Top 3 cidades com melhor AQI (mais baixo)
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista retornada com sucesso.
+
+  /api/cities/top/worst:
+    get:
+      summary: Top 3 cidades com pior AQI (mais alto)
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista retornada com sucesso.
+
   /api/readings/{id}:
     patch:
       summary: Adicionar nota a uma leitura (Update)

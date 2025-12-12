@@ -21,6 +21,8 @@ router.get('/status', (req, res) => res.json({ status: 'online' }));
 router.get('/cities', CityController.listCities);
 router.post('/cities', CityController.addCity);
 router.patch('/cities/:id/active', CityController.updateActive);
+router.get('/cities/top/best', CityController.getTopBest);
+router.get('/cities/top/worst', CityController.getTopWorst);
 
 // Leituras
 router.get('/cities/:id/readings', ReadingController.getHistory);
