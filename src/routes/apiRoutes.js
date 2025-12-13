@@ -25,6 +25,7 @@ router.get('/cities/top/best', CityController.getTopBest);
 router.get('/cities/top/worst', CityController.getTopWorst);
 
 // Leituras
+router.get('/cities/readings', ReadingController.getAllReadings);
 router.get('/cities/:id/readings', ReadingController.getHistory);
 router.patch('/readings/:id', ReadingController.addNote);      
 router.delete('/readings/:id', ReadingController.deleteReading); 

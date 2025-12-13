@@ -1,6 +1,50 @@
 const db = require('../config/database');
 
 const ReadingController = {
+    // GET /api/cities/readings - Histórico global (todas as cidades)
+    getAllReadings: (req, res) => {
+        const { start_date, end_date, limit } = req.query;
+
+        // JOIN para incluir o nome da cidade nos resultados globais
+        // Usamos alias 'r' para readings e 'c' para cities
+        let sql = `
+            SELECT r.*, c.display_name as city_name 
+            FROM aqi_readings r
+            JOIN monitored_cities c ON r.city_id = c.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (start_date) {
+            sql += ` AND r.measured_at >= ?`;
+            params.push(start_date);
+        }
+
+        if (end_date) {
+            sql += ` AND r.measured_at <= ?`;
+            params.push(end_date);
+        }
+
+        // Ordenação por data decrescente
+        sql += ` ORDER BY r.measured_at DESC`;
+
+        // Limite
+        sql += ` LIMIT ?`;
+        params.push(limit ? parseInt(limit) : 50);
+
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({
+                status: 'success',
+                filters: { start_date, end_date, limit },
+                count: rows.length,
+                data: rows
+            });
+        });
+    },
+    
     // GET /cities/:id/readings - Histórico de uma cidade com filtros
     getHistory: (req, res) => {
         const cityId = req.params.id;

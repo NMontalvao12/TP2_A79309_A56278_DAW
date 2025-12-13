@@ -192,4 +192,25 @@ group #LightPink Cenário 7: Cliente Consulta Estatísticas (Top 3)
     deactivate API
 end
 
+' --- CENÁRIO 8: CLIENTE - CONSULTAR HISTÓRICO GLOBAL ---
+group #LightPink Cenário 8: Cliente Consulta Histórico Global
+    Client -> API: GET /api/cities/readings?start_date=...
+    activate API
+    
+    API -> Auth: Validar x-api-key
+    Auth --> API: Autorizado
+    
+    API -> Ctrl: getAllReadings(filtros)
+    activate Ctrl
+    
+    Ctrl -> DB: SELECT r.*, c.name FROM aqi_readings r\nJOIN monitored_cities c...
+    activate DB
+    DB --> Ctrl: Rows (Histórico Global)
+    deactivate DB
+    
+    Ctrl --> Client: 200 OK (JSON List)
+    deactivate Ctrl
+    deactivate API
+end
+
 @enduml

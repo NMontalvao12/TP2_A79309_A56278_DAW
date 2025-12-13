@@ -220,11 +220,17 @@ Body: `{ "is_active": false }`
 
 ### 5.3. Dados (Leituras)
 
-**GET /cities/:city_id/readings** Obtém histórico de qualidade do ar.  
+**GET /cities/readings** Obtém histórico de qualidade do ar de todas as cidades monitorizadas.  
 Query Params (opcionais):
 - `start_date` (ex: 2025-01-01)
 - `end_date` (ex: 2025-01-31)
-- `limit` (padrão: 50)
+- `limit` (padrão: 100)
+
+**GET /cities/:city_id/readings** Obtém histórico de qualidade do ar de uma cidade específica.  
+Query Params (opcionais):
+- `start_date` (ex: 2025-01-01)
+- `end_date` (ex: 2025-01-31)
+- `limit` (padrão: 100)
 
 **PATCH /readings/:reading_id** Adiciona notas a uma leitura.  
 Body: `{ "user_notes": "Anomalia detectada." }`

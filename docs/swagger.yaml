@@ -71,6 +71,41 @@ paths:
         201:
           description: Cidade criada e sincronização iniciada.
 
+  /api/cities/readings:
+    get:
+      summary: Obter histórico global (todas as cidades)
+      tags: [Leituras]
+      parameters:
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+          description: Data de início (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+          description: Data de fim (YYYY-MM-DD)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+          description: Limite de resultados (Padrão 100)
+      responses:
+        200:
+          description: Lista global retornada com sucesso.
+
+  /api/cities/readings:
+    get:
+      summary: Listar cidades monitorizadas
+      tags: [Cidades]
+      responses:
+        200:
+          description: Lista de cidades retornada com sucesso.
+
   /api/cities/{id}/active:
     patch:
       summary: Ativar/Desativar cidade monitorizada
@@ -113,6 +148,24 @@ paths:
             type: integer
           required: true
           description: ID da cidade
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+          description: Data de início (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+          description: Data de fim (YYYY-MM-DD)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+          description: Limite de resultados (Padrão 100)
       responses:
         200:
           description: Histórico retornado com sucesso.
