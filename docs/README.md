@@ -53,10 +53,10 @@ Com o servidor a correr, aceda à documentação interativa para testar os endpo
 ### 6. Gestão de Chaves (Primeiros Passos)
 O sistema arranca sem clientes registados (exceto se configurado manualmente). Para usar a API, deve primeiro gerar uma API Key de Cliente usando a sua Chave de Admin:
 
-1. Faça um POST para /api/admin/generate-key.
-2. Header x-api-key: use o valor de ADMIN_API_KEY do seu .env.
-3. Body: { "client_name": "O Meu Cliente" }.
-4. Use a chave retornada (api_key) para fazer pedidos aos outros endpoints.
+1. Faça um POST para `/api/admin/generate-key`.
+2. Header `x-api-key`: use o valor de `ADMIN_API_KEY` do seu `.env`.
+3. Body: `{ "client_name": "O Meu Cliente" }`.
+4. Use a chave retornada (`api_key`) para fazer pedidos aos outros endpoints.
 
 ---
 
@@ -80,11 +80,15 @@ O sistema adota uma arquitetura de **Microsserviços** (implementada como um ser
 
 ## 2. Processos de Fluxo de Dados
 
+O diagrama abaixo ilustra as interações sequenciais entre o Administrador, o Cliente, o Sistema (Backend) e a API Externa para os principais casos de uso.
+
+![Diagrama de Sequência](docs/diagrams/out/sequence_diagram/sequence_diagram.png)
+
 ### 2.1. Fluxo de Sincronização (Ingestão de Dados)
 Este processo é automático e garante que a base de dados local mantém um histórico contínuo.
 
 1. **Gatilho (Scheduler):** O módulo `node-cron` executa uma tarefa a cada hora (ex: `0 * * * *`).
-2. **Leitura de Configuração:** O sistema consulta a tabela local `monitored_cities` para obter os nomes das cidades a processar (campo `search_query`).
+2. **Leitura de Configuração:** O sistema consulta a tabela local `monitored_cities` para obter os nomes das cidades a processar, verificando se estão marcadas como ativas (`is_active = 1`).
 3. **Requisição Externa:**
    * Endpoint: `GET https://hub.juheapi.com/aqi/v1/city`
    * Parâmetros: `q={nome_cidade}` e `apikey={JUHE_API_KEY}`.
@@ -99,7 +103,7 @@ Este processo é automático e garante que a base de dados local mantém um hist
 
 ### 2.2. Fluxo de Exposição (Consumo via API REST)
 
-1. **Autenticação:** O cliente envia um pedido com o header `x-api-key`. O middleware valida a chave na tabela `api_keys`.
+1. **Autenticação:** O cliente envia um pedido com o header `x-api-key`. O middleware valida a chave na tabela `api_keys` comparando hashes SHA-256.
 2. **Consulta (Read):** O endpoint (ex: `GET /readings/history`) aceita filtros de data.
 3. **Manipulação (Update/Create):** O cliente pode anotar registos existentes (ex: adicionar observações sobre o clima local) ou inserir medições manuais.
 4. **Resposta:** Os dados são retornados em formato JSON padronizado.
@@ -171,12 +175,12 @@ CREATE TABLE api_keys (
 
 ---
 
-## 4. Modelo de Segurança  
+## 4. Modelo de Segurança 
 O sistema implementa segurança hierárquica:
 
 **Nível Admin (Backoffice):**
 - Controlado pela variável de ambiente `ADMIN_API_KEY`.
-- Permite acesso exclusivo à rota `/api/admin/*` para gerar chaves.
+- Permite acesso exclusivo à rota `/api/admin/*` para gestão de chaves (gerar e remover).
 
 **Nível Cliente (Consumidor):**
 - Controlado por chaves geradas (UUIDs), cujos hashes (SHA-256) são armazenados na tabela `api_keys`.
@@ -191,37 +195,38 @@ O sistema implementa segurança hierárquica:
 
 ### 5.1. Administração
 
-**POST /admin/generate-key**  
-Gera uma nova chave para um cliente. Requer `ADMIN_API_KEY`.
+**POST /admin/generate-key** Gera uma nova chave para um cliente. Requer `ADMIN_API_KEY`.  
+Body: `{ "client_name": "Nome do Cliente" }`
 
-```json
-{ "client_name": "Nome do Cliente" }
-```
+**DELETE /admin/api-keys/:id** Remove uma API Key existente por ID (revoga o acesso do cliente). Requer `ADMIN_API_KEY`.
+
 ---
 
-### 5.2. Configuração (Cidades)
+### 5.2. Configuração (Cidades) e Estatísticas
 
-**POST /cities**  
-Regista uma nova cidade e força sincronização imediata.  
+**POST /cities** Regista uma nova cidade e força sincronização imediata.  
 Body: `{ "search_query": "london", "display_name": "Londres" }`
 
-**GET /cities**  
-Lista todas as cidades configuradas.
+**GET /cities** Lista todas as cidades configuradas e o seu estado (ativa/inativa).
+
+**PATCH /cities/:id/active** Ativa ou desativa a monitorização automática de uma cidade.  
+Body: `{ "is_active": false }`
+
+**GET /cities/top/best** Retorna as 3 cidades com a melhor qualidade do ar (menor índice AQI) com base na última leitura registada.
+
+**GET /cities/top/worst** Retorna as 3 cidades com a pior qualidade do ar (maior índice AQI) com base na última leitura registada.
 
 ---
 
 ### 5.3. Dados (Leituras)
 
-**GET /cities/:city_id/readings**  
-Obtém histórico.  
+**GET /cities/:city_id/readings** Obtém histórico de qualidade do ar.  
 Query Params (opcionais):
 - `start_date` (ex: 2025-01-01)
 - `end_date` (ex: 2025-01-31)
 - `limit` (padrão: 50)
 
-**PATCH /readings/:reading_id**  
-Adiciona notas a uma leitura.  
+**PATCH /readings/:reading_id** Adiciona notas a uma leitura.  
 Body: `{ "user_notes": "Anomalia detectada." }`
 
-**DELETE /readings/:reading_id**  
-Remove uma leitura específica.
+**DELETE /readings/:reading_id** Remove uma leitura específica do histórico.

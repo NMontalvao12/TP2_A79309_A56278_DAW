@@ -1,0 +1,195 @@
+@startuml
+!theme plain
+autonumber
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+
+' Definição dos Participantes
+actor "Admin" as Admin
+actor "Cliente" as Client
+control "Cron Job\n(Scheduler)" as Cron
+
+box "AQI System (Node.js)" #White
+    participant "API Routes" as API
+    participant "Auth Middleware" as Auth
+    participant "Controllers" as Ctrl
+    participant "AQI Service" as Service
+end box
+
+database "SQLite DB" as DB
+participant "JuheAPI\n(Externa)" as ExtAPI
+
+' --- CENÁRIO 1: ADMIN - GERAR CHAVE ---
+group #LightBlue Cenário 1: Admin Gera Nova Chave
+    Admin -> API: POST /api/admin/generate-key\n(Header: ADMIN_API_KEY)
+    activate API
+    
+    API -> API: Valida ADMIN_API_KEY (.env)
+    API -> Ctrl: generateKey()
+    activate Ctrl
+    
+    Ctrl -> Ctrl: Gerar UUID
+    Ctrl -> Ctrl: Hash SHA-256(UUID)
+    
+    Ctrl -> DB: INSERT INTO api_keys (client_name, key_hash)
+    activate DB
+    DB --> Ctrl: Success
+    deactivate DB
+    
+    Ctrl --> Admin: 201 Created\n(Retorna UUID em texto plano)
+    deactivate Ctrl
+    deactivate API
+end
+
+' --- CENÁRIO 2: ADMIN - REMOVER CHAVE ---
+group #LightBlue Cenário 2: Admin Remove Chave (Revogar Acesso)
+    Admin -> API: DELETE /api/admin/api-keys/{id}
+    activate API
+    API -> API: Valida ADMIN_API_KEY
+    API -> Ctrl: deleteKey(id)
+    activate Ctrl
+    Ctrl -> DB: DELETE FROM api_keys WHERE id = ?
+    activate DB
+    DB --> Ctrl: Success
+    deactivate DB
+    Ctrl --> Admin: 200 OK
+    deactivate Ctrl
+    deactivate API
+end
+
+' --- CENÁRIO 3: CLIENTE - ADICIONAR CIDADE ---
+group #LightYellow Cenário 3: Cliente Adiciona Cidade
+    Client -> API: POST /api/cities\n(Header: x-api-key)
+    activate API
+    
+    API -> Auth: Validar Chave
+    activate Auth
+    Auth -> Auth: Hash(x-api-key)
+    Auth -> DB: SELECT * FROM api_keys WHERE key_hash = ?
+    activate DB
+    DB --> Auth: Cliente Encontrado
+    deactivate DB
+    Auth --> API: Autorizado
+    deactivate Auth
+
+    API -> Ctrl: addCity(nome)
+    activate Ctrl
+    
+    Ctrl -> DB: INSERT INTO monitored_cities
+    activate DB
+    DB --> Ctrl: Success
+    deactivate DB
+
+    note right of Ctrl
+      Ao criar cidade, força sync imediato
+      para ter dados logo
+    end note
+    
+    Ctrl -> Service: syncData()
+    activate Service
+    Service -> ExtAPI: GET /aqi/v1/city
+    activate ExtAPI
+    ExtAPI --> Service: JSON Data
+    deactivate ExtAPI
+    
+    Service -> Service: Processar (Calcular Categoria AQI)
+    Service -> DB: INSERT INTO aqi_readings
+    activate DB
+    DB --> Service: Saved
+    deactivate DB
+    deactivate Service
+
+    Ctrl --> Client: 201 Created
+    deactivate Ctrl
+    deactivate API
+end
+
+' --- CENÁRIO 4: CLIENTE - DESATIVAR MONITORIZAÇÃO ---
+group #LightYellow Cenário 4: Cliente Desativa Monitorização
+    Client -> API: PATCH /api/cities/{id}/active
+    activate API
+    API -> Auth: Validar Chave
+    Auth --> API: Autorizado
+    
+    API -> Ctrl: toggleActive(id, is_active=false)
+    activate Ctrl
+    Ctrl -> DB: UPDATE monitored_cities SET is_active=0 WHERE id=?
+    activate DB
+    DB --> Ctrl: Updated
+    deactivate DB
+    Ctrl --> Client: 200 OK
+    deactivate Ctrl
+    deactivate API
+end
+
+' --- CENÁRIO 5: ROTINA AUTOMÁTICA ---
+group #LightGreen Cenário 5: Sincronização Agendada (Background)
+    Cron -> Service: Trigger syncData() (Hora a hora)
+    activate Service
+    
+    Service -> DB: SELECT * FROM monitored_cities WHERE is_active=1
+    activate DB
+    DB --> Service: Lista de Cidades Ativas
+    deactivate DB
+    
+    loop Para cada cidade ativa
+        Service -> ExtAPI: GET /aqi/v1/city?q={cidade}
+        activate ExtAPI
+        ExtAPI --> Service: Dados (AQI, PM2.5, CO...)
+        deactivate ExtAPI
+        
+        alt Resposta Válida
+            Service -> Service: Flatten Geo (lat/lon)
+            Service -> Service: Calcular 'aqi_category'
+            Service -> DB: INSERT INTO aqi_readings
+            activate DB
+            DB --> Service: OK
+            deactivate DB
+        else Erro na API Externa
+            Service -> Service: Log Erro
+        end
+    end
+    deactivate Service
+end
+
+' --- CENÁRIO 6: CLIENTE - CONSULTAR HISTÓRICO ---
+group #LightPink Cenário 6: Cliente Consulta Histórico
+    Client -> API: GET /api/cities/{id}/readings?start_date=...
+    activate API
+    
+    API -> Auth: Validar x-api-key
+    Auth --> API: Autorizado
+    
+    API -> Ctrl: getHistory(filtros)
+    activate Ctrl
+    
+    Ctrl -> DB: SELECT * FROM aqi_readings\nWHERE date >= start_date...
+    activate DB
+    DB --> Ctrl: Rows (Histórico)
+    deactivate DB
+    
+    Ctrl --> Client: 200 OK (JSON List)
+    deactivate Ctrl
+    deactivate API
+end
+
+' --- CENÁRIO 7: CLIENTE - CONSULTAR ESTATÍSTICAS ---
+group #LightPink Cenário 7: Cliente Consulta Estatísticas (Top 3)
+    Client -> API: GET /api/cities/top/best
+    activate API
+    API -> Auth: Validar x-api-key
+    Auth --> API: Autorizado
+    
+    API -> Ctrl: getTopCities('asc')
+    activate Ctrl
+    Ctrl -> DB: SELECT DISTINCT city... ORDER BY aqi ASC LIMIT 3
+    activate DB
+    DB --> Ctrl: Top 3 Cidades (AQI mais baixo)
+    deactivate DB
+    
+    Ctrl --> Client: 200 OK (JSON List)
+    deactivate Ctrl
+    deactivate API
+end
+
+@enduml
