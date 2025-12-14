@@ -2,6 +2,10 @@
 
 Este projeto foi desenvolvido no âmbito da disciplina de Desenvolvimento de Aplicações Web. Consiste numa API RESTful que consome dados públicos de qualidade do ar, processa-os e armazena-os localmente, expondo-os através de endpoints documentados.
 
+**Autores**:
+- José Victor Gonçalves dos Santos: a56278@ualg.pt
+- Afonso Montalvão: a79309@ualg.pt
+
 ---
 
 ## Instruções de Instalação e Execução

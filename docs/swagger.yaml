@@ -4,7 +4,7 @@ info:
   description: API desenvolvida no âmbito da UC Dev. de Aplicações Web, da LESTI, para sincronizar dados da JuheAPI, processá-los e expô-los localmente.
   version: 1.0.0
   contact:
-    name: José Victor Santos
+    name: José Victor Santos / Afonso Montalvão
 servers:
   - url: http://localhost:3000
     description: Servidor Local
