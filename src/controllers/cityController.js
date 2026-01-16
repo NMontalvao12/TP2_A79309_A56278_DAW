@@ -17,42 +17,50 @@ const CityController = {
     },
 
     // POST /cities - Adicionar nova cidade
-    addCity: (req, res) => {
+    addCity: async (req, res) => {
         const { search_query, display_name } = req.body;
 
         if (!search_query) {
             return res.status(400).json({ error: "O campo 'search_query' é obrigatório." });
         }
 
-        const sql = `INSERT INTO monitored_cities (search_query, display_name) VALUES (?, ?)`;
-        const params = [search_query, display_name || search_query];
-
-        db.run(sql, params, function (err) {
-            if (err) {
-                // Erro comum: cidade duplicada (UNIQUE constraint)
-                if (err.message.includes('UNIQUE')) {
-                    return res.status(409).json({ error: "Esta cidade já está a ser monitorizada." });
-                }
-                return res.status(500).json({ error: err.message });
+        try {
+            // ✅ 1. Validar se a cidade existe na API externa
+            const exists = await AqiService.validateCity(search_query);
+            if (!exists) {
+                return res.status(404).json({ error: `Cidade '${search_query}' não encontrada na API externa.` });
             }
 
-            const newCityId = this.lastID;
+            // ✅ 2. Inserir na BD
+            const sql = `INSERT INTO monitored_cities (search_query, display_name) VALUES (?, ?)`;
+            const params = [search_query, display_name || search_query];
 
-            // --- REQUISITO DE TEMPO REAL ---
-            // Assim que adicionamos a cidade, forçamos a sincronização para obter dados imediatamente
-            // sem esperar pela próxima hora do Cron Job.
-            AqiService.syncData(); 
-
-            res.status(201).json({
-                status: 'success',
-                message: 'Cidade adicionada e sincronização iniciada.',
-                data: {
-                    id: newCityId,
-                    search_query,
-                    display_name
+            db.run(sql, params, function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE')) {
+                        return res.status(409).json({ error: "Esta cidade já está a ser monitorizada." });
+                    }
+                    return res.status(500).json({ error: err.message });
                 }
+
+                const newCityId = this.lastID;
+
+                // ✅ 3. Sincronizar dados imediatamente
+                AqiService.syncData(); 
+
+                res.status(201).json({
+                    status: 'success',
+                    message: 'Cidade adicionada e sincronização iniciada.',
+                    data: {
+                        id: newCityId,
+                        search_query,
+                        display_name
+                    }
+                });
             });
-        });
+        } catch (err) {
+            res.status(500).json({ error: "Erro ao validar cidade na API externa." });
+        }
     },
 
     updateActive: (req, res) => {

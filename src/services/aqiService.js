@@ -72,6 +72,26 @@ const AqiService = {
         } catch (error) {
             console.error('Erro geral no serviço de sincronização:', error);
         }
+    },
+    
+    validateCity: async (search_query) => {
+        try {
+            const response = await axios.get('https://hub.juheapi.com/aqi/v1/city', {
+                params: {
+                    q: search_query,
+                    apikey: process.env.JUHE_API_KEY
+                }
+            });
+
+            // Se a API respondeu corretamente e retornou dados
+            if (response.data && response.data.code === "0" && response.data.data) {
+                return true;
+            }
+            return false; // API respondeu, mas não encontrou dados
+        } catch (error) {
+            // Erro HTTP ou cidade não encontrada
+            return false;
+        }
     }
 };
 
